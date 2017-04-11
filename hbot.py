@@ -38,5 +38,6 @@ def send():
         return jsonify(answer="ERROR: I had some problems with my brain", last_questions=None, answer_prob=1.0)
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
+if __name__ == 'hbot':
     app.run()
