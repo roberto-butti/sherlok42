@@ -1,0 +1,12 @@
+exclude-list.txt
+Makefile.*
+.gitignore
+/venv
+/sass
+/.idea
+/__pycache__/
+/.sass-cache/
+*.zip
+.git/
+db_fortytwo/
+*.pyc
