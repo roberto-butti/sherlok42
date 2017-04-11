@@ -1,0 +1,142 @@
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title> - 42 -  </title>
+	<link rel=stylesheet type=text/css href="{{ url_for('static', filename='build/css/style.css') }}">
+
+	<meta name="viewport" content="width=device-width">
+</head>
+<body>
+	<div class="wrapper">
+		<form class="searchform" action="" autocomplete="off">
+			<h1>42</h1>
+			<div class="searchform__wrapper">
+				<input name="text" type="text" autofocus="true"  class="main-input" placeholder="Cerca">
+				<button class="submit-button" type="submit" style="display: none;"></button>
+				<span class="voice-button"></span>
+			</div>
+			<div class="result"></div>
+			<div class="last_questions">
+				<strong>Le ultime vostre domande</strong>
+				<ul class="last_questions__list">
+				</ul>
+			</div>
+		</form>
+	</div>
+	<script>
+		// https://github.com/yanatan16/nanoajax
+	!function(t,e){function n(t){return t&&e.XDomainRequest&&!/MSIE 1/.test(navigator.userAgent)?new XDomainRequest:e.XMLHttpRequest?new XMLHttpRequest:void 0}function o(t,e,n){t[e]=t[e]||n}var r=["responseType","withCredentials","timeout","onprogress"];t.ajax=function(t,a){function s(t,e){return function(){c||(a(void 0===f.status?t:f.status,0===f.status?"Error":f.response||f.responseText||e,f),c=!0)}}var u=t.headers||{},i=t.body,d=t.method||(i?"POST":"GET"),c=!1,f=n(t.cors);f.open(d,t.url,!0);var l=f.onload=s(200);f.onreadystatechange=function(){4===f.readyState&&l()},f.onerror=s(null,"Error"),f.ontimeout=s(null,"Timeout"),f.onabort=s(null,"Abort"),i&&(o(u,"X-Requested-With","XMLHttpRequest"),e.FormData&&i instanceof e.FormData||o(u,"Content-Type","application/x-www-form-urlencoded"));for(var p,m=0,v=r.length;v>m;m++)p=r[m],void 0!==t[p]&&(f[p]=t[p]);for(var p in u)f.setRequestHeader(p,u[p]);return f.send(i),f},e.nanoajax=t}({},function(){return this}());
+	</script>
+
+	<script>
+		var formUrl = '/send';
+		var form = document.querySelector('.searchform');
+		var result = document.querySelector('.result');
+		var input = document.querySelector('.main-input');
+		var voiceButton = document.querySelector('.voice-button');
+		var submitButton = document.querySelector('.submit-button');
+		var voiceStarted = false;
+		var latestQuestionsWrapper = document.querySelector('.last_questions__list');
+
+		var attachLatestQuestionsEvents = function() {
+			Array.prototype.forEach.call(document.querySelectorAll('.last_questions__list a'),function(el) {
+				el.addEventListener('click', function(e){
+					e.preventDefault();
+					input.value = el.innerHTML;
+					sendForm();
+				});
+			})
+		}
+
+		var getResultColor = function(prob) {
+			console.log(prob);
+			var color = 'rgba('+Math.round((1-prob)*255)+','+Math.round(prob*255)+',0,1)';
+			return color;
+		}
+
+		var addResultClass = function(prob) {
+			console.log(prob);
+			var className;
+
+			if(prob >= 0.8) {
+				className = 'sure';
+			} else if(prob > 0.5) {
+				className = 'neutral';
+			} else {
+				className = 'confused';
+			}
+
+			result.classList.add(className);
+
+		}
+
+		var sendForm = function() {
+			nanoajax.ajax({
+				url:formUrl,
+				method: 'POST',
+				responseType : 'json',
+				body: new FormData(form)
+			}, function (code, responseText) {
+				if(code==200) {
+					result.style.display = 'block';
+					addResultClass(responseText.answer_prob);
+					result.innerHTML = responseText.answer;
+					latestQuestionsWrapper.innerHTML = '';
+					JSON.parse(responseText.last_questions).forEach(function(ans){
+						var li = document.createElement('LI');
+						li.innerHTML = '<a href="#">'+ans.text+'</a>';
+						latestQuestionsWrapper.appendChild(li);
+					});
+					attachLatestQuestionsEvents();
+				} else {
+					result.innerHTML = code;
+				}
+			});
+		}
+
+		form.addEventListener('submit',function(e) {
+			result.classList.remove('sure','neutral','confused');
+			result.innerHTML = '';
+			e.preventDefault();
+			form.classList.add("sending");
+			sendForm();
+			return false;
+		});
+
+		attachLatestQuestionsEvents();
+
+
+		if(window.hasOwnProperty('webkitSpeechRecognition')) {
+			var recognition = new webkitSpeechRecognition();
+			recognition.lang = "it-IT";
+			voiceButton.addEventListener('click',function(e) {
+				if(voiceStarted === true) return;
+				voiceStarted = true;
+				recognition.onaudiostart = function(event) {
+				  voiceButton.classList.add('recording');
+				  input.value = '';
+				}
+				recognition.onresult = function(event) {
+				  input.value = event.results[0][0].transcript;
+				  voiceButton.classList.remove('recording');
+				  voiceStarted = false;
+				  sendForm();
+				}
+				recognition.onerror = function(event) {
+				  voiceButton.classList.add('error');
+				  voiceStarted = false;
+				}
+				recognition.onend = function(event) {
+				  voiceButton.classList.remove('recording');
+				  voiceStarted = false;
+				}
+				recognition.start();
+			});
+		} else {
+			voiceButton.style.display = 'none';
+			submitButton.style.display = 'block';
+		}
+
+	</script>
+</body>
+</html>
