@@ -4,7 +4,7 @@ Makefile.*
 /venv
 /sass
 /.idea
-/__pycache__/
+__pycache__
 /.sass-cache/
 *.zip
 .git/
